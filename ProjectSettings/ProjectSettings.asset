@@ -619,11 +619,11 @@ PlayerSettings:
   m_MobileRenderingPath: 1
   metroPackageName: HaptGloveAR
   metroPackageVersion: 1.0.0.0
-  metroCertificatePath: Assets\WSATestCertificate.pfx
+  metroCertificatePath: Assets/WSATestCertificate.pfx
   metroCertificatePassword: 
   metroCertificateSubject: DefaultCompany
   metroCertificateIssuer: DefaultCompany
-  metroCertificateNotAfter: 00f78d58ef60da01
+  metroCertificateNotAfter: 80b75c5fe481db01
   metroApplicationDescription: HaptGloveAR
   wsaImages: {}
   metroTileShortName: HaptGloveAR

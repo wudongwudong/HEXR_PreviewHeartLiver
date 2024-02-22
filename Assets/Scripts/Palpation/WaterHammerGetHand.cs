@@ -51,11 +51,11 @@ public class WaterHammerGetHand : MonoBehaviour
             {
                 case "ViveTracker_Left":
                     //whichHand = "LargeLeft";
-                    interactingHand = GameObject.Find("Hands_Large").transform.Find("Generic Hand_Left").gameObject.GetComponent<HaptGloveHandler>();
+                    interactingHand = GameObject.Find("Hand").transform.Find("Generic Hand_Left").gameObject.GetComponent<HaptGloveHandler>();
                     break;
                 case "ViveTracker_Right":
                     //whichHand = "LargeRight";
-                    interactingHand = GameObject.Find("Hands_Large").transform.Find("Generic Hand_Right").gameObject.GetComponent<HaptGloveHandler>();
+                    interactingHand = GameObject.Find("Hand").transform.Find("Generic Hand_Right").gameObject.GetComponent<HaptGloveHandler>();
                     break;
                 case "ViveTracker_Left_Medium":
                     //whichHand = "MediumLeft";
