@@ -2,60 +2,180 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using HaptGlove;
+using Microsoft.MixedReality.Toolkit.UI;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class LiverEdgeHaptics : MonoBehaviour
 {
+    [SerializeField] private AbdominalPalpationHandler abdominalPalpationHandler;
+
     public bool showVisualCue = true;
     public TMP_Text logText;
     public GameObject liver;
-    public Vector3 liverIniPosition;
+    private Vector3 liverIniPosition;
     public Vector3 liverDisplacement = new Vector3(0f, -0.02f, 0f);
 
-    public static float heartBeat_Hz = 0.2f;
-    public static int oneCycle = (int)(1/heartBeat_Hz*1000);
+    public float breath_Hz = 0.2f;
+    public int oneCycle;
 
     private bool beatOn = false;
 
     private HaptGloveHandler gloveHandler;
 
-    public float[] palpateStartFingerPos = new float[5];
-    public float[] palpateCurFingerPos = new float[5];
-    public float liverEdgePalpateThreshold = 0.5f;  /////////////
-    public float curForce = 0;
+    public int[] palpateStartFingerPos = new int[5];
+    public int[] palpateCurFingerPos = new int[5];
+    public int liverEdgePalpateThreshold = 100;  /////////////
+    public int curForce = 0;
     private bool isInLiverRegion = false;
+    private bool isGrasped = false;
+    public bool isInPainRegion = false;
+
+    [SerializeField] private TMP_Text lowerThreshold_Text;
+    [SerializeField] private TMP_Text upperThreshold_Text;
+    [SerializeField] private TMP_Text breathRate_Text;
+
+    public enum PressingState
+    {
+        None,
+        Light,
+        Normal,
+        Hard
+    }
+
+    public PressingState pressingState = PressingState.None;
+
+    private int[] pressingThreshold = new int[3] { 10, 100, 200 };
+
+    //GPT
+    private HoloLensClient hololensClient;
 
     void Start()
     {
+        oneCycle = (int)(1 / breath_Hz * 1000);
+
         liverIniPosition = liver.transform.localPosition;
+
+        GameObject gptObject = GameObject.Find("GPTHandler");
+        if (gptObject != null)
+        {
+            hololensClient = gptObject.GetComponent<HoloLensClient>();
+        }
+
+        abdominalPalpationHandler.onGrasped += OnGraspedPatient;
+        abdominalPalpationHandler.onReleased += OnReleasedPatient;
+    }
+
+    private void OnGraspedPatient(HaptGloveHandler.HandType hand, HaptGloveHandler handler)
+    {
+        gloveHandler = handler;
+
+        if (gloveHandler != null)
+        {
+            //palpateStartFingerPos = gloveHandler.GetFingerPosition();
+            gloveHandler.GetFingerPosition().CopyTo(palpateStartFingerPos, 0);
+        }
+
+        isGrasped = true;
+    }
+
+    //private void OnGraspedPatient(HaptGloveHandler.HandType hand, HaptGloveHandler handler)
+    //{
+    //    gloveHandler = handler;
+
+    //    StartCoroutine(StopPumpDelayGrasp(gloveHandler));
+    //}
+
+    //IEnumerator StopPumpDelayGrasp(HaptGloveHandler handler)
+    //{
+    //    yield return new WaitForSeconds(0.5f);
+
+    //    if (gloveHandler != null)
+    //    {
+    //        //palpateStartFingerPos = gloveHandler.GetFingerPosition();
+    //        gloveHandler.GetFingerPosition().CopyTo(palpateStartFingerPos, 0);
+    //    }
+
+    //    isGrasped = true;
+    //}
+
+    private void OnReleasedPatient(HaptGloveHandler.HandType hand, HaptGloveHandler handler)
+    {
+        isGrasped = false;
+    }
+
+    public void OnSliderChanged(SliderEventData eventData)
+    {
+        int lowerMin = 0;
+        int lowerMax = 1000;
+        int UpperMin = 600;
+        int upperMax = 1600;
+        int breathMin = 10;
+        int breathMax = 20;
+
+        string sliderName = eventData.Slider.name;
+
+        switch (sliderName)
+        {
+            //case "Slider_I1":
+            //    tarPres = (byte)(eventData.NewValue * (pres1Max - pres1Min) + pres1Min);
+            //    pressure_Text.text = tarPres.ToString();
+            //    break;
+            case "Slider_I2":
+                pressingThreshold[1] = (int)(eventData.NewValue * (lowerMax - lowerMin) + lowerMin);
+                lowerThreshold_Text.text = pressingThreshold[1].ToString();
+                break;
+            case "Slider_I3":
+                pressingThreshold[2] = (int)(eventData.NewValue * (upperMax - UpperMin) + UpperMin);
+                upperThreshold_Text.text = pressingThreshold[2].ToString();
+                break;
+            case "Slider_I4":
+                breath_Hz = (eventData.NewValue * (breathMax - breathMin) + breathMin) / 60;
+                oneCycle = (int)(1 / breath_Hz * 1000);
+                breathRate_Text.text = (breath_Hz * 60).ToString();
+                break;
+        }
     }
 
     void OnTriggerEnter(Collider collider)
     {
-        if (collider.name == "L_index_c")
+        Debug.Log(collider.name);
+        if (collider.name == "GhostPalm")
         {
-            palpateStartFingerPos = collider.transform.parent.parent.parent.parent.parent.parent
-                .GetComponent<Grasping>().hapticStartPosition;  //same array reference
-            palpateCurFingerPos = collider.transform.parent.parent.parent.parent.parent.parent
-                .GetComponent<Grasping>().normalizedMicrotubeData;  // same array reference
-            gloveHandler = collider.transform.parent.parent.parent.parent.parent.parent.GetComponent<HaptGloveHandler>();
+            gloveHandler = collider.GetComponentInParent<HaptGloveHandler>();
+            //palpateStartFingerPos = gloveHandler.GetFingerPosition();
+            gloveHandler.GetFingerPosition().CopyTo(palpateStartFingerPos, 0);
 
             isInLiverRegion = true;
 
         }
     }
 
+    //void OnTriggerEnter(Collider collider)
+    //{
+    //    if (collider.name == "GhostPalm")
+    //    {
+    //        gloveHandler = collider.GetComponentInParent<HaptGloveHandler>();
+    //        //palpateStartFingerPos = gloveHandler.GetFingerPosition();
+    //        gloveHandler.GetFingerPosition().CopyTo(palpateStartFingerPos, 0);
+
+    //        isInLiverRegion = true;
+    //    }
+    //}
+
+    //IEnumerator StopPumpDelay
+
     private void OnTriggerExit(Collider collider)
     {
-        if (collider.name == "L_index_c")
+        if (collider.name == "GhostPalm")
         {
-            StartCoroutine("DelayFunc");
+            //StartCoroutine("DelayFunc");
 
             isInLiverRegion = false;
+            beatOn = false;
 
-            if ((curStage>=2) | (curStage <=4)) //pressure applied
+            if ((curStage >= 2) | (curStage <= 4)) //pressure applied
             {
                 coroutine = LiverEdgeApplyHaptics((int)(norT4 * oneCycle), false);
                 StartCoroutine(coroutine);
@@ -65,39 +185,117 @@ public class LiverEdgeHaptics : MonoBehaviour
             timeFrame = 0;
             liver.transform.localPosition = liverIniPosition;
 
-            logText.text = "Training";
+            logText.text = "";
         }
     }
 
     /// 0 - t1, approaching, no haptics - t2, pressing, increasing pressure - t3. holding, keeping pressure
     /// - t4, releasing, decreasing pressure - t5, released, no haptics - one cycle - t6, rest, no haptics
-    private float norT1 = (float)1/6;
-    private float norT2 = (float)1/6;
-    private float norT3 = (float)1/6;
-    private float norT4 = (float)1/6;
-    private float norT5 = (float)1/6;
-    private float norT6 = (float)1/6;
+    private float norT1 = (float)1 / 6;
+    private float norT2 = (float)1 / 6;
+    private float norT3 = (float)1 / 6;
+    private float norT4 = (float)1 / 6;
+    private float norT5 = (float)1 / 6;
+    private float norT6 = (float)1 / 6;
     private int curStage = 1;
     private float timeFrame = 0;
 
     private IEnumerator coroutine;
 
+    [SerializeField] TMP_Text debugTMP;
+
     void Update()
     {
-        if (isInLiverRegion)
+        if (gloveHandler != null)
         {
-            //curForce = (palpateCurFingerPos[1] + palpateCurFingerPos[2] + palpateCurFingerPos[3] + palpateCurFingerPos[4]) - 
-            //           (palpateStartFingerPos[1] + palpateStartFingerPos[2] + palpateStartFingerPos[3] + palpateStartFingerPos[4]);
+            int[] airPressure = gloveHandler.GetAirPressure();
 
-            //if (curForce >= liverEdgePalpateThreshold) 
+            if (debugTMP!= null)
+            {
+                debugTMP.text = airPressure[1] + ", " + airPressure[2] + ", " + airPressure[3] + ",\n" + palpateCurFingerPos[1] + "\n" + palpateCurFingerPos[2] + "\n" + "\n\n" + curForce;// + palpateCurFingerPos[3]
+            }
+            
+
+            palpateCurFingerPos = gloveHandler.GetFingerPosition();
+
+            curForce = (palpateCurFingerPos[1] + palpateCurFingerPos[2]) - (palpateStartFingerPos[1] + palpateStartFingerPos[2]);// + palpateCurFingerPos[3],  + palpateStartFingerPos[3]
+        }
+
+        if (isGrasped)
+        {
+
+
+            if (curForce <= pressingThreshold[0])
+            {
+                if (pressingState != PressingState.None)
+                {
+                    pressingState = PressingState.None;
+
+                    if (isInLiverRegion)
+                        beatOn = false;
+
+                    logText.text = "PressingState: None";
+                }
+            }
+            else if (curForce <= pressingThreshold[1])
+            {
+                if (pressingState != PressingState.Light)
+                {
+                    pressingState = PressingState.Light;
+
+                    if (isInLiverRegion)
+                        beatOn = false;
+
+                    logText.text = "PressingState: Light";
+#if !UNITY_EDITOR
+                    hololensClient.SendForceDetectedMessage(HoloLensClient.forceLevel.small);
+#endif
+                }
+            }
+            else if (curForce <= pressingThreshold[2])
+            {
+                if (pressingState != PressingState.Normal)
+                {
+                    pressingState = PressingState.Normal;
+
+                    if (isInLiverRegion)
+                        beatOn = true;
+
+                    logText.text = "PressingState: Normal";
+
+#if !UNITY_EDITOR
+                    if (isInPainRegion)
+                        hololensClient.SendForceDetectedMessage(HoloLensClient.forceLevel.medium);
+#endif
+                }
+            }
+            else if (curForce > pressingThreshold[2])
+            {
+                if (pressingState != PressingState.Hard)
+                {
+                    pressingState = PressingState.Hard;
+
+                    if (isInLiverRegion)
+                        beatOn = true;
+
+                    logText.text = "PressingState: Hard";
+
+#if !UNITY_EDITOR
+                    if (isInPainRegion)
+                        hololensClient.SendForceDetectedMessage(HoloLensClient.forceLevel.large);
+#endif
+                }
+            }
+
+
+            //if (curForce >= liverEdgePalpateThreshold)
             //{
             //    beatOn = true;
             //    logText.text = "Liver palpation correct";
             //}
+            //else { beatOn = false; logText.text = "Press harder to feel the liver edge"; }
 
-            //else {beatOn = false; logText.text = "Press harder to feel the liver edge"; }
-
-            beatOn = true;
+            //beatOn = true;
 
 
 
@@ -131,7 +329,7 @@ public class LiverEdgeHaptics : MonoBehaviour
                         break;
                     case 2:
                         liver.transform.localPosition = Vector3.Lerp(liverIniPosition, liverIniPosition + liverDisplacement,
-                            norT1/(norT1 + norT2) + timeFrame / ((norT1 + norT2) * oneCycle));
+                            norT1 / (norT1 + norT2) + timeFrame / ((norT1 + norT2) * oneCycle));
 
                         if (timeFrame >= (norT2 * oneCycle))
                         {
@@ -166,7 +364,7 @@ public class LiverEdgeHaptics : MonoBehaviour
                         break;
                     case 5:
                         liver.transform.localPosition = Vector3.Lerp(liverIniPosition + liverDisplacement, liverIniPosition,
-                            norT4/(norT4 + norT5) + timeFrame / ((norT4 + norT5) * oneCycle));
+                            norT4 / (norT4 + norT5) + timeFrame / ((norT4 + norT5) * oneCycle));
 
                         if (timeFrame >= (norT5 * oneCycle))
                         {
@@ -192,7 +390,7 @@ public class LiverEdgeHaptics : MonoBehaviour
 
             }
         }
-        
+
     }
 
     IEnumerator LiverEdgeApplyHaptics(int milliseconds, bool isPressing)
@@ -207,11 +405,11 @@ public class LiverEdgeHaptics : MonoBehaviour
 
         if (isPressing)
         {
-            clutchState = new byte[] { 5, 0 };
+            clutchState = new byte[] { 4, 0 };
         }
         else
         {
-            clutchState = new byte[] { 5, 2 };
+            clutchState = new byte[] { 4, 2 };
         }
 
         for (int i = 0; i < integer; i++)
@@ -231,10 +429,10 @@ public class LiverEdgeHaptics : MonoBehaviour
         }
     }
 
-    IEnumerator DelayFunc()
-    {
-        gameObject.GetComponent<MeshCollider>().enabled = false;
-        yield return new WaitForSeconds(1f);
-        gameObject.GetComponent<MeshCollider>().enabled = true;
-    }
+    //IEnumerator DelayFunc()
+    //{
+    //    gameObject.GetComponent<MeshCollider>().enabled = false;
+    //    yield return new WaitForSeconds(1f);
+    //    gameObject.GetComponent<MeshCollider>().enabled = true;
+    //}
 }

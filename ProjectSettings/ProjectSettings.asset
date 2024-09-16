@@ -12,8 +12,8 @@ PlayerSettings:
   targetDevice: 2
   useOnDemandResources: 0
   accelerometerFrequency: 60
-  companyName: DefaultCompany
-  productName: HaptGloveAR
+  companyName: Microtube Technologies
+  productName: HEXR Example
   defaultCursor: {fileID: 0}
   cursorHotspot: {x: 0, y: 0}
   m_SplashScreenBackgroundColor: {r: 0.13725491, g: 0.12156863, b: 0.1254902, a: 1}
@@ -617,14 +617,14 @@ PlayerSettings:
     WSA: 3
   m_RenderingPath: 1
   m_MobileRenderingPath: 1
-  metroPackageName: HaptGloveAR
+  metroPackageName: HEXRExample
   metroPackageVersion: 1.0.0.0
   metroCertificatePath: Assets/WSATestCertificate.pfx
   metroCertificatePassword: 
-  metroCertificateSubject: DefaultCompany
-  metroCertificateIssuer: DefaultCompany
-  metroCertificateNotAfter: 80b75c5fe481db01
-  metroApplicationDescription: HaptGloveAR
+  metroCertificateSubject: Microtube Technologies
+  metroCertificateIssuer: Microtube Technologies
+  metroCertificateNotAfter: 80c0e8852a9edb01
+  metroApplicationDescription: HEXR Example Heart Liver
   wsaImages: {}
   metroTileShortName: HaptGloveAR
   metroTileShowName: 0

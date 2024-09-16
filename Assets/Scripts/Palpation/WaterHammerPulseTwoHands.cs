@@ -188,10 +188,10 @@ public class WaterHammerPulseTwoHands : MonoBehaviour
         {
             case 0:                         //healthy
                 norT1 = 200f / 1000f;
-                norT2 = 150f / 1000f;
+                norT2 = 200f / 1000f;
                 norT3 = 100f / 1000f;
                 norT4 = 100f / 1000f;
-                norT5 = 450f / 1000f;
+                norT5 = 400f / 1000f;
                 break;
             case 1:                         //unhealthy
                 norT1 = 200f / 1000f;
@@ -210,10 +210,10 @@ public class WaterHammerPulseTwoHands : MonoBehaviour
         switch (pulseStrength)
         {
             case 0:
-                valveTiming = new byte[] { 3, 3 };//weak
+                valveTiming = new byte[] { 4, 3 };//weak
                 break;
             case 1:
-                valveTiming = new byte[] { 8, 5 };//normal
+                valveTiming = new byte[] { 8, 6 };//normal
                 break;
             case 2:
                 valveTiming = new byte[] { 12, 13 };//strong
@@ -298,6 +298,8 @@ public class WaterHammerPulseTwoHands : MonoBehaviour
 
                         //Debug.Log("curStage = 3");
                         //ApplyPulseHaptics(norI2, false);
+                        //Water hammer pulse sign, pulse fast decline here.
+
                     }
                     break;
                 case 3:
